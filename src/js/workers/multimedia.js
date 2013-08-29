@@ -5,7 +5,8 @@
 /*
 * Multimedia player
 */
-/*global jQuery: false*/
+/*global jQuery: false, mejs, MediaElement*/
+/*jshint smarttabs:true, newcap: false */
 (function ($) {
 	"use strict";
 	var _pe = window.pe || {
@@ -29,7 +30,7 @@
 
 			if (_pe.svg) {
 				icon = _pe.fn.multimedia.icons.clone();
-				icon.attr({'height': height, 'width': width});
+				icon.attr({ 'height': height, 'width': width });
 				icon.prepend('<title>' + alt + '</title>');
 				icon.children(':not(g[id="' + id + '"])').remove();
 				g = icon.children('g');
@@ -37,7 +38,7 @@
 				if (height !== 20 || width !== 20) {
 					g.attr('transform', 'scale(' + width / 20 + ',' + height / 20 + ')');
 				}
-				return icon.attr({'role' : 'img', 'aria-label' : alt});
+				return icon.attr({ 'role': 'img', 'aria-label': alt });
 			}
 
 			return $('<img src="' + _pe.add.liblocation + 'images/multimedia/' + id + '.png" alt="' + alt + '" height="' + height + '" width="' + width + '" />');
@@ -91,16 +92,11 @@
 
 				// path to the flash and silverlight plugins
 				mejs.MediaElementDefaults.pluginPath = _pe.add.liblocation + 'binary/';
-
 				MediaElement(media_id, {
-					// initial dimensions
-					pluginWidth: media.parent().width(),
-					pluginHeight: media.parent().width() * height / width,
 					success:
-						function (me, domnode) {
+						function (me) {
 							media = $("#" + me.id + "_container");
 							setupPlayerControls(me);
-							$(evtmgr).trigger('durationchange');
 						}
 				});
 
@@ -168,7 +164,7 @@
 							w = e.data.media.parent().width();
 						if (e.data.playerNode) {
 
-							// resize player's container
+							// resize player's container; needed for mobile browsers
 							e.data.media.height(h);
 							e.data.media.width(w);
 
@@ -267,16 +263,16 @@
 						switch (e.type) {
 							case 'durationchange':
 								d = this.getDuration();
-								if (!isNaN(d) && d !== Infinity) {
+								if (!isNaN(d) && d !== Infinity && d !== 0) {
 									$w.find('.wb-mm-timeline-total span:not(.wb-invisible)').text(_pe.fn.multimedia._format_time(d));
-
 									//Skip to pointer from the querystring
 									if (_pe.urlquery[this.id] !== undefined) {
 										s = _pe.fn.multimedia._parse_time(_pe.urlquery[this.id]);
 										this.setCurrentTime(s);
 									}
+
+									evtmgr.off('durationchange');
 								}
-								evtmgr.off('durationchange');
 								break;
 							case 'play':
 								b = $w.find('.playpause');
@@ -311,13 +307,17 @@
 								p = Math.round(this.getCurrentTime() / this.getDuration() * 1000) / 10;
 								timeline = $w.find('.wb-mm-timeline progress');
 								timeline.attr('value', p);
-
+								
 								$w.find('.wb-mm-timeline-current span:not(.wb-invisible)').text(_pe.fn.multimedia._format_time(this.getCurrentTime()));
 
 								//Update captions
 								if ($.data(e.target, 'captions') !== undefined) {
 									_pe.fn.multimedia._update_captions($w.find('.wb-mm-captionsarea'), this.getCurrentTime(), $.data(e.target, 'captions'));
 								}
+
+								//Update total duration if not set
+								evtmgr.trigger('durationchange');
+
 								break;
 							case 'captionsloaded':
 								//Store the captions
@@ -336,7 +336,7 @@
 									b.attr('title', _pe.dic.get('%closed-caption', 'enable'));
 								}
 								break;
-							// Determine when the loading icon should be shown.						 
+							// Determine when the loading icon should be shown.								  
 							case 'waiting':
 								//Prevents the loading icon to show up when waiting for less than half a second
 								if (this.getPaused() === false && !this.loading) {
@@ -356,7 +356,7 @@
 									o.hide();
 								}
 								break;
-							// Fallback for browsers that don't implement the waiting/canplay events						 
+							// Fallback for browsers that don't implement the waiting/canplay events								  
 							case 'progress':
 								// Waiting detected, display the loading icon
 								if (this.getWaiting() === true) {
@@ -384,7 +384,7 @@
 			return elm;
 		}, // end of exec
 
-		_get_loading_ind : function (media, id, title, w, h) {
+		_get_loading_ind: function (media, id, title, w, h) {
 			var img = _pe.fn.multimedia.get_image(id, title, w, h).attr('title', title),
 				angle = 0,
 				spinner,
@@ -401,7 +401,7 @@
 			return img;
 		},
 
-		_get_ui : function (id, cc) {
+		_get_ui: function (id, cc) {
 			var ui = $('<div class="wb-mm-controls">'),
 				ui_start = $('<div class="wb-mm-controls-start">'),
 				ui_timeline = $('<div class="wb-mm-timeline" tabindex="0"><p class="wb-mm-timeline-current"><span class="wb-invisible">' + _pe.dic.get('%position') + '</span><span>00:00:00</span></p><p class="wb-mm-timeline-total"><span class="wb-invisible">' + _pe.dic.get('%duration') + '</span><span>--:--:--</span></p><p class="wb-mm-timeline-inner"><span class="wb-invisible">' + _pe.dic.get('%percentage') + '</span><progress value="0" max="100" aria-live="off" /></p>'),
@@ -535,7 +535,7 @@
 				return $(this).find('.wb-mm-captionsarea').is(':visible');
 			},
 
-			setCaptionsVisible : function (v) {
+			setCaptionsVisible: function (v) {
 				if (v) {
 					$(this).find('.wb-mm-captionsarea').show();
 				} else {
@@ -561,7 +561,7 @@
 			},
 
 			setVolume: function (v) {
-				if (typeof this.object.volume !== 'function') {this.object.volume = v; } else {this.object.setVolume(v); }
+				if (typeof this.object.volume !== 'function') { this.object.volume = v; } else { this.object.setVolume(v); }
 			},
 
 			getWaiting: function () {
@@ -612,7 +612,7 @@
 			for (i = 2; i >= 0; i -= 1) {
 				p = Math.pow(60, i);
 				c = Math.floor(current / p);
-				if (t !== "") {t += ":"; }
+				if (t !== "") { t += ":"; }
 				t += _pe.string.pad(c, 2);
 				current -= p * c;
 			}
@@ -659,9 +659,9 @@
 					e.find(s).detach();
 
 					captions[captions.length] = {
-						text : e.html(),
-						begin : begin,
-						end : end
+						text: e.html(),
+						begin: begin,
+						end: end
 					};
 
 
@@ -687,9 +687,9 @@
 					e.find(s).detach();
 
 					captions[captions.length] = {
-						text : e.html(),
-						begin : begin,
-						end : end
+						text: e.html(),
+						begin: begin,
+						end: end
 					};
 				});
 				return captions;
@@ -698,22 +698,22 @@
 
 			load_captions_internal = function (obj) {
 				var eventObj = {
-					type : 'captionsloaded',
-					captions : parse_html(obj)
+					type: 'captionsloaded',
+					captions: parse_html(obj)
 				};
 				evtmgr.trigger(eventObj);
 			};
 
 			load_captions_external = function (url) {
 				$.ajax({
-					url : url,
-					context : evtmgr,
-					dataType : 'html',
-					dataFilter: function(data) {
+					url: url,
+					context: evtmgr,
+					dataType: 'html',
+					dataFilter: function (data) {
 						return data.replace(/<img [^>]*>/gi, ''); //Remove images to prevent them from being loaded
 					},
-					success : function (data) {
-						var eventObj = {type: 'captionsloaded'};
+					success: function (data) {
+						var eventObj = { type: 'captionsloaded' };
 						if (data.indexOf('<html') > -1) {
 							eventObj.captions = parse_html($(data));
 						} else {
@@ -721,8 +721,8 @@
 						}
 						$(this).trigger(eventObj);
 					},
-					error : function (response, textStatus, errorThrown) {
-						$(this).trigger({type: 'captionsloadfailed', error: errorThrown});
+					error: function (response, textStatus, errorThrown) {
+						$(this).trigger({ type: 'captionsloadfailed', error: errorThrown });
 					}
 				});
 			};
@@ -775,4 +775,4 @@
 
 	window.pe = _pe;
 	return _pe;
-}(jQuery));
+} (jQuery));
